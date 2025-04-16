@@ -1,0 +1,11 @@
+services:
+  _defaults:
+    public: true
+    autowire: true
+    autoconfigure: true
+
+  mpcustomerjobs.controller.admin.mpcustomerjobscontroller:
+    class: MpSoft\MpCustomerJobs\Controllers\Admin\MpCustomerJobsController
+    arguments:
+      - '@=service("prestashop.core.admin.lang.repository")'
+    public: true

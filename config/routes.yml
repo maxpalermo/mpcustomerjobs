@@ -1,0 +1,110 @@
+# modules/mpcustomerjobs/config/routes.yml
+admin_customerjobs_tabs:
+  path: /mp-customer-jobs
+  methods: [GET]
+  defaults:
+    _controller: 'MpSoft\MpCustomerJobs\Controllers\Admin\MpCustomerJobsController::indexAction'
+
+mpcustomerjobs_admin_add_area:
+  path: mpcustomerjobs/{id_customer}/add-area
+  methods: [POST]
+  defaults:
+    _controller: 'MpSoft\MpCustomerJobs\Controllers\Admin\MpCustomerJobsController::addAreaAction'
+  requirements:
+    id_customer: \d+
+
+mpcustomerjobs_admin_update_area:
+  path: mpcustomerjobs/{id_customer}/update-area
+  methods: [POST]
+  defaults:
+    _controller: 'MpSoft\MpCustomerJobs\Controllers\Admin\MpCustomerJobsController::updateAreaAction'
+  requirements:
+    id_customer: \d+
+
+mpcustomerjobs_admin_delete_area:
+  path: mpcustomerjobs/{id_customer}/delete-area
+  methods: [POST]
+  defaults:
+    _controller: 'MpSoft\MpCustomerJobs\Controllers\Admin\MpCustomerJobsController::deleteAreaAction'
+  requirements:
+    id_customer: \d+
+
+mpcustomerjobs_admin_get_area:
+  path: mpcustomerjobs/{id_customer}/get-area
+  methods: [GET]
+  defaults:
+    _controller: 'MpSoft\\MpCustomerJobs\\Controllers\\Admin\\MpCustomerJobsController::getAreaAction'
+  requirements:
+    id_customer: \d+
+
+mpcustomerjobs_admin_add_name:
+  path: mpcustomerjobs/{id_customer}/add-name
+  methods: [POST]
+  defaults:
+    _controller: 'MpSoft\\MpCustomerJobs\\Controllers\\Admin\\MpCustomerJobsController::addNameAction'
+  requirements:
+    id_customer: \d+
+
+mpcustomerjobs_admin_update_name:
+  path: mpcustomerjobs/{id_customer}/update-name
+  methods: [POST]
+  defaults:
+    _controller: 'MpSoft\\MpCustomerJobs\\Controllers\\Admin\\MpCustomerJobsController::updateNameAction'
+  requirements:
+    id_customer: \d+
+
+mpcustomerjobs_admin_delete_name:
+  path: mpcustomerjobs/{id_customer}/delete-name
+  methods: [POST]
+  defaults:
+    _controller: 'MpSoft\\MpCustomerJobs\\Controllers\\Admin\\MpCustomerJobsController::deleteNameAction'
+  requirements:
+    id_customer: \d+
+
+mpcustomerjobs_admin_get_name:
+  path: mpcustomerjobs/{id_customer}/get-name
+  methods: [GET]
+  defaults:
+    _controller: 'MpSoft\\MpCustomerJobs\\Controllers\\Admin\\MpCustomerJobsController::getNameAction'
+  requirements:
+    id_customer: \d+
+
+mpcustomerjobs_admin_add_link:
+  path: mpcustomerjobs/{id_customer}/add-link
+  methods: [POST]
+  defaults:
+    _controller: 'MpSoft\\MpCustomerJobs\\Controllers\\Admin\\MpCustomerJobsController::addLinkAction'
+  requirements:
+    id_customer: \d+
+
+mpcustomerjobs_admin_update_link:
+  path: mpcustomerjobs/{id_customer}/update-link
+  methods: [POST]
+  defaults:
+    _controller: 'MpSoft\\MpCustomerJobs\\Controllers\\Admin\\MpCustomerJobsController::updateLinkAction'
+  requirements:
+    id_customer: \d+
+
+mpcustomerjobs_admin_delete_link:
+  path: mpcustomerjobs/{id_customer}/delete-link
+  methods: [POST]
+  defaults:
+    _controller: 'MpSoft\\MpCustomerJobs\\Controllers\\Admin\\MpCustomerJobsController::deleteLinkAction'
+  requirements:
+    id_customer: \d+
+
+mpcustomerjobs_admin_get_link:
+  path: mpcustomerjobs/{id_customer}/get-link
+  methods: [GET]
+  defaults:
+    _controller: 'MpSoft\\MpCustomerJobs\\Controllers\\Admin\\MpCustomerJobsController::getLinkAction'
+  requirements:
+    id_customer: \d+
+
+mpcustomerjobs_admin_get_customer_job:
+  path: mpcustomerjobs/{id_customer}/get-customer-job
+  methods: [GET]
+  defaults:
+    _controller: 'MpSoft\\MpCustomerJobs\\Controllers\\Admin\\MpCustomerJobsController::getCustomerJobAction'
+  requirements:
+    id_customer: \d+

@@ -1,0 +1,42 @@
+{
+    "name": "mpsoft/mpcustomerjobs",
+    "description": "Modulo Professioni Clienti per PrestaShop",
+    "type": "prestashop-module",
+    "license": "AFL-3.0",
+    "version": "1.0.1",
+    "authors": [
+        {
+            "name": "Massimiliano Palermo",
+            "email": "maxx.palermo@gmail.com"
+        }
+    ],
+    "require": {
+        "php": ">=7.4.0",
+        "prestashop/prestashop-webservice-lib": "dev-master"
+    },
+    "autoload": {
+        "psr-4": {
+            "MpSoft\\MpCustomerJobs\\": "src/"
+        },
+        "classmap": [],
+        "exclude-from-classmap": [],
+        "files": []
+    },
+    "config": {
+        "preferred-install": "dist",
+        "prepend-autoloader": false
+    },
+    "extra": {
+        "module": {
+            "name": "Customer Jobs",
+            "author": "Massimiliano Palermo",
+            "author_email": "maxx.palermo@gmail.com",
+            "author_url": "https://www.prestashop.maxpalermo.it",
+            "license": "AFL-3.0",
+            "url": "https://www.prestashop.maxpalermo.it",
+            "readme": "README.md"
+        }
+    },
+    "minimum-stability": "dev",
+    "prefer-stable": true
+}

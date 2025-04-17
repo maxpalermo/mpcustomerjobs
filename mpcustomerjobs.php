@@ -37,6 +37,7 @@ class MpCustomerJobs extends Module implements WidgetInterface
     protected $jobAreaList = [];
     protected $jobNameList = [];
     protected $jobLinkList = [];
+    protected $id_lang;
 
     public function __construct()
     {
@@ -59,6 +60,7 @@ class MpCustomerJobs extends Module implements WidgetInterface
 
         $this->displayName = $this->l('Professioni Clienti');
         $this->description = $this->l('Gestisce le professioni cliente');
+        $this->id_lang = (int) Context::getContext()->language->id;
     }
 
     /**
@@ -128,7 +130,6 @@ class MpCustomerJobs extends Module implements WidgetInterface
 
         return parent::install()
             && $this->registerHook([
-                'displayAdminCustomer',
                 'actionAdminControllerSetMedia',
                 'actionFrontControllerSetMedia',
                 'actionCustomerFormBuilderModifier',
@@ -138,11 +139,15 @@ class MpCustomerJobs extends Module implements WidgetInterface
                 'actionCustomerAccountUpdate',
                 'actionCustomerGridDefinitionModifier',
                 'actionCustomerGridQueryBuilderModifier',
+                'actionObjectCustomerAddAfter',
+                'actionObjectCustomerUpdateAfter',
                 'additionalCustomerFormFields',
                 'validateCustomerFormFields',
+                'displayAdminCustomers',
                 'displayCustomerAccount',
                 'displayCustomerAccountForm',
                 'displayCustomerAccountFormTop',
+                'displayAdminEndContent',
             ])
             && (new ModelMpCustomerJobArea())->install()
             && (new ModelMpCustomerJobName())->install()
@@ -278,8 +283,33 @@ class MpCustomerJobs extends Module implements WidgetInterface
      */
     public function hookActionAdminControllerSetMedia($params)
     {
-        // TODO: Implementare visualizzazione sopra il form account cliente
-        return '';
+        $controller = Tools::strtolower(Tools::getValue('controller'));
+        $controllers = [
+            'admincustomers',
+        ];
+        $jsPath = $this->getLocalPath() . 'views/js/';
+        $cssPath = $this->getLocalPath() . 'views/css/';
+        if (in_array($controller, $controllers)) {
+            $this->context->controller->addJqueryPlugin('growl');
+
+            $this->context->controller->addCSS(
+                [
+                    $cssPath . 'style.css',
+                    $cssPath . 'swal2/sweetalert2.min.css',
+                    $jsPath . 'select2/select2.min.css',
+                    $jsPath . 'tippy/scale.css',
+                ]
+            );
+            $this->context->controller->addJS(
+                [
+                    $jsPath . 'select2/select2.min.js',
+                    $jsPath . 'swal2/sweetalert2.all.min.js',
+                    $jsPath . 'tippy/popper-core2.js',
+                    $jsPath . 'tippy/tippy.js',
+                    $jsPath . 'AdminController/script.js',
+                ]
+            );
+        }
     }
 
     public function hookAdditionalCustomerFormFields($params)
@@ -361,14 +391,132 @@ class MpCustomerJobs extends Module implements WidgetInterface
         return '';
     }
 
+    public function hookActionObjectCustomerAddAfter($params)
+    {
+    }
+
+    public function hookActionObjectCustomerUpdateAfter($params)
+    {
+        if (Tools::getValue('controller') != 'AdminCustomers') {
+            return;
+        }
+        $id_customer = $params['object']->id;
+        $customer = Tools::getValue('customer', []);
+        $id_customer_job_area = $customer['id_customer_job_area'] ?? 0;
+        $id_customer_job_name = $customer['id_customer_job_name'] ?? 0;
+
+        $customerEurosolution = new ModelMpCustomerJob($id_customer);
+        $customerEurosolution->id_customer_job_area = $id_customer_job_area;
+        $customerEurosolution->id_customer_job_name = $id_customer_job_name;
+        $customerEurosolution->save();
+    }
+
+    public function hookDisplayAdminEndContent($params)
+    {
+        $controller_name = Tools::strtolower($this->context->controller->controller_name);
+        if ($controller_name != 'admincustomers') {
+            return;
+        }
+
+        // Pass the AJAX URL to JS
+        $ajaxUrl = $this->context->link->getModuleLink($this->name, 'AjaxJobNames', [], Configuration::get('PS_SSL_ENABLED') ?? 0);
+        $script = <<<JS
+            <script type="text/javascript">
+                const mpCustomerJobAjaxUrl = '{$ajaxUrl}';
+            </script>
+        JS;
+
+        return $script;
+    }
+
     /**
      * Hook: displayAdminCustomer
      * Visualizza informazioni aggiuntive nella scheda cliente in back office
      */
-    public function hookDisplayAdminCustomer($params)
+    public function hookDisplayAdminCustomers($params)
     {
-        // TODO: Implementare visualizzazione dati professioni cliente nel back office
-        return '';
+        $controller_name = Tools::strtolower($this->context->controller->controller_name);
+        if ($controller_name != 'admincustomers') {
+            return;
+        }
+
+        $this->context->controller->confirmations[] = 'HOOK displayAdminCustomers';
+        $fontSize = '1.2rem';
+        $controller = $this->context->link->getModuleLink($this->name, 'AjaxJobNames', [], Configuration::get('PS_SSL_ENABLED') ?? 0);
+        $id_customer = (int) Tools::getValue('id_customer');
+        $jobCustomerModel = new ModelMpCustomerJob($id_customer);
+        if (Validate::isLoadedObject($jobCustomerModel)) {
+            $jobArea = new ModelMpCustomerJobArea($jobCustomerModel->id_customer_job_area, $this->id_lang);
+            $jobName = new ModelMpCustomerJobName($jobCustomerModel->id_customer_job_name, $this->id_lang);
+
+            if (Validate::isLoadedObject($jobArea)) {
+                $jobArea = $jobArea->name;
+                $badgeColor = 'info';
+            } else {
+                $jobArea = '--';
+                $badgeColor = 'warning';
+            }
+
+            if (Validate::isLoadedObject($jobName)) {
+                $jobName = $jobName->name;
+                $badgeColor = 'info';
+            } else {
+                $jobName = '--';
+                $badgeColor = 'warning';
+            }
+        } else {
+            $jobArea = '--';
+            $jobName = '--';
+        }
+
+        $script = <<<JS
+            <template id="mpcustomerjobs-personal-info">
+                <div class="row mb-1 jobarea-container">
+                    <div class="col-4 text-right">
+                        Settore
+                    </div>
+                    <div class="col-8">
+                        <span class="mpcustomerjobs badge badge-{$badgeColor} rounded" style="font-size: {$fontSize}; border-radius: 0;">
+                            <i class="material-icons">key</i>
+                            {$jobArea}
+                        </span>
+                    </div>
+                </div>
+                <div class="row mb-1 jobname-container">
+                    <div class="col-4 text-right">
+                        Professione
+                    </div>
+                    <div class="col-8">
+                        <span class="mpcustomerjobs badge badge-{$badgeColor} rounded" style="font-size: {$fontSize}; border-radius: 0;">
+                            <i class="material-icons">key</i>
+                            {$jobName}
+                        </span>
+                    </div>
+                </div>
+            </template>
+
+            <script type="text/javascript">
+                console.log('mpcustomerjobs');
+                const MPCUSTOMERJOBAREA_adminAjaxURL = "{$controller}";
+                const MPCUSTOMERJOBAREA_employeeId = {$this->context->employee->id};
+                const MPCUSTOMERJOBAREA_customerId = {$id_customer};
+                const MPCUSTOMERJOBAREA_area = "{$jobArea}";
+                const MPCUSTOMERJOBAREA_name = "{$jobName}";
+
+                //creo un nuovo custom event
+                const MpCustomerJobAreaReady = new CustomEvent('MpCustomerJobAreaReady', {
+                    detail: {
+                        MPCUSTOMERJOBAREA_employeeId: MPCUSTOMERJOBAREA_employeeId??0,
+                        MPCUSTOMERJOBAREA_customerId: MPCUSTOMERJOBAREA_customerId??0,
+                        MPCUSTOMERJOBAREA_area: MPCUSTOMERJOBAREA_area??0,
+                        MPCUSTOMERJOBAREA_name: MPCUSTOMERJOBAREA_name??0,
+                    },
+                });
+                document.dispatchEvent(MpCustomerJobAreaReady);
+            </script>
+        JS;
+
+        return $script;
     }
 
     /**
@@ -378,44 +526,12 @@ class MpCustomerJobs extends Module implements WidgetInterface
     public function hookActionCustomerFormBuilderModifier($params)
     {
         $formBuilder = $params['form_builder'];
-        $context = \Context::getContext();
-        $id_lang = (int) $context->language->id;
-
-        // Recupera tutte le aree
-        $jobAreas = [];
-        $sql = new \DbQuery();
-        $sql->select('id_customer_job_area, name')
-            ->from('customer_job_area_lang')
-            ->where('id_lang = ' . $id_lang)
-            ->orderBy('name');
-        $result = \Db::getInstance()->executeS($sql);
-        if ($result) {
-            foreach ($result as $row) {
-                $jobAreas[$row['id_customer_job_area']] = \Tools::strtoupper($row['name']);
-            }
-        }
-        $jobAreas = [null => ''] + $jobAreas;
-
-        // Recupera tutte le professioni
-        $jobNames = [];
-        $sql = new \DbQuery();
-        $sql->select('id_customer_job_name, name')
-            ->from('customer_job_name_lang')
-            ->where('id_lang = ' . $id_lang)
-            ->orderBy('name');
-        $result = \Db::getInstance()->executeS($sql);
-        if ($result) {
-            foreach ($result as $row) {
-                $jobNames[$row['id_customer_job_name']] = \Tools::strtoupper($row['name']);
-            }
-        }
-        $jobNames = [null => ''] + $jobNames;
 
         // Aggiungi i campi select al form
         $formBuilder->add('id_customer_job_area', \Symfony\Component\Form\Extension\Core\Type\ChoiceType::class, [
             'label' => $this->l('Settore'),
             'required' => false,
-            'choices' => $jobAreas,
+            'choices' => $this->reverseKeyArray($this->jobAreaList),
             'attr' => [
                 'class' => 'mp-job-area-select',
             ],
@@ -423,11 +539,21 @@ class MpCustomerJobs extends Module implements WidgetInterface
         $formBuilder->add('id_customer_job_name', \Symfony\Component\Form\Extension\Core\Type\ChoiceType::class, [
             'label' => $this->l('Professione'),
             'required' => false,
-            'choices' => $jobNames,
+            'choices' => $this->reverseKeyArray($this->jobNameList),
             'attr' => [
                 'class' => 'mp-job-name-select',
             ],
         ]);
+    }
+
+    public function hookActionCustomerFormDataProviderData(array $params)
+    {
+        $MPCUSTOMERJOBS_customerId = $params['id'];
+        if ($MPCUSTOMERJOBS_customerId) {
+            $customerEurosolution = new ModelMpCustomerJob($MPCUSTOMERJOBS_customerId);
+            $params['data']['id_customer_job_area'] = $customerEurosolution->id_customer_job_area;
+            $params['data']['id_customer_job_name'] = $customerEurosolution->id_customer_job_name;
+        }
     }
 
     /**
@@ -436,7 +562,8 @@ class MpCustomerJobs extends Module implements WidgetInterface
      */
     public function hookActionCustomerFormDataProviderDefaultData($params)
     {
-        // TODO: Implementare fornitura dati di default per form cliente
+        $params['data']['id_customer_job_area'] = 0;
+        $params['data']['id_customer_job_name'] = 0;
     }
 
     /**
@@ -454,8 +581,7 @@ class MpCustomerJobs extends Module implements WidgetInterface
      */
     public function hookDisplayCustomerAccountFormTop($params)
     {
-        // TODO: Implementare visualizzazione sopra il form account cliente
-        return '';
+        return $this->renderWidget('displayCustomerAccountFormTop', $params);
     }
 
     /**
@@ -569,5 +695,15 @@ class MpCustomerJobs extends Module implements WidgetInterface
 
         $params['search_query_builder'] = $searchQueryBuilder;
         $params['search_criteria'] = $searchCriteria;
+    }
+
+    protected function reverseKeyArray($array)
+    {
+        $out = [];
+        foreach ($array as $key => $value) {
+            $out[$value] = $key;
+        }
+
+        return $out;
     }
 }

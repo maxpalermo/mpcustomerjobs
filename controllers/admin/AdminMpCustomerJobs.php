@@ -24,84 +24,63 @@ class AdminMpCustomerJobsController extends ModuleAdminController
 
     public function __construct()
     {
+        $pageType = Tools::getValue('pagetype', 'main');
+
         $this->context = Context::getContext();
         $this->module = Module::getInstanceByName('mpcustomerjobs');
         $this->translator = Context::getContext()->getTranslator();
+        $this->explicitSelect = true;
 
         $this->bootstrap = true;
-        $this->table = 'customer';
-        $this->identifier = 'id_customer';
-        $this->className = 'ModelMpCustomerJob';
-        $this->lang = false;
-
-        $this->fields_list = [
-            'id_customer' => [
-                'title' => 'ID',
-                'align' => 'center',
-                'class' => 'fixed-width-xs',
-            ],
-            'firstname' => [
-                'title' => 'Nome',
-                'align' => 'left',
-            ],
-            'lastname' => [
-                'title' => 'Cognome',
-                'align' => 'left',
-            ],
-            'email' => [
-                'title' => 'email',
-                'align' => 'left',
-            ],
-            'id_customer_job_area' => [
-                'type' => 'select',
-                'title' => 'Settore',
-                'list' => $this->getJobAreas(),
-                'filter_key' => 'cj!id_customer_job_area',
-                'callback' => 'getJobAreaLabel',
-            ],
-            'id_customer_job_name' => [
-                'type' => 'select',
-                'title' => 'Professione',
-                'list' => $this->getJobNames(),
-                'filter_key' => 'cj!id_customer_job_name',
-                'callback' => 'getJobNameLabel',
-            ],
-            'date_add' => [
-                'title' => 'Data creazione',
-                'type' => 'datetime',
-            ],
-            'date_upd' => [
-                'title' => 'Ultima modifica',
-                'type' => 'datetime',
-            ],
-        ];
-
-        $this->_select = 'c.firstname, c.lastname, c.email, cj.id_customer_job_area, cj.id_customer_job_name';
-        $this->_join = ' LEFT JOIN ' . _DB_PREFIX_ . 'customer c ON c.id_customer=a.id_customer';
-        $this->_join .= ' LEFT JOIN ' . _DB_PREFIX_ . 'customer_job cj ON cj.id_customer=a.id_customer';
 
         $this->jobAreaList = $this->getJobAreas();
         $this->jobNameList = $this->getJobNames();
 
+        switch ($pageType) {
+            case 'link':
+                $this->getListLink();
+
+                break;
+            case 'area':
+                $this->getListArea();
+
+                break;
+            case 'jobs':
+                $this->getListJobs();
+
+                break;
+            case 'main':
+            default:
+                $this->getListMain();
+        }
+
         parent::__construct();
+    }
+
+    public function setMedia($isNewTheme = false)
+    {
+        $jsPath = $this->module->getLocalPath() . 'views/js/';
+        $this->context->controller->addJS("{$jsPath}Admin/manageURL.js");
+
+        parent::setMedia($isNewTheme);
     }
 
     public function initPageHeaderToolbar()
     {
         $this->page_header_toolbar_btn['link'] = [
-            'href' => $this->context->link->getAdminLink('AdminMpCustomerJobs', true, [], ['action' => 'linkJobs']),
+            'href' => $this->context->link->getAdminLink('AdminMpCustomerJobs', true, [], ['pagetype' => 'link']),
             'desc' => $this->module->l('Associa professioni'),
             'icon' => 'icon-link',
             'class' => 'link-jobs',
         ];
         $this->page_header_toolbar_btn['sector'] = [
-            'href' => $this->context->link->getAdminLink('AdminMpCustomerJobs', true, [], ['action' => 'newSector']),
+            'href' => $this->context->link->getAdminLink('AdminMpCustomerJobs', true, [], ['pagetype' => 'area']),
             'desc' => $this->module->l('Nuovo settore'),
             'icon' => 'icon-plus-circle',
             'class' => 'new-sector',
         ];
         $this->page_header_toolbar_btn['job'] = [
-            'href' => $this->context->link->getAdminLink('AdminMpCustomerJobs', true, [], ['action' => 'newJob']),
+            'href' => $this->context->link->getAdminLink('AdminMpCustomerJobs', true, [], ['pagetype' => 'jobs']),
             'desc' => $this->module->l('Nuova professione'),
             'icon' => 'icon-plus-circle',
             'class' => 'new-job',
@@ -170,5 +149,129 @@ class AdminMpCustomerJobsController extends ModuleAdminController
         }
 
         return $this->jobNameList[$value] ?? $value;
+    }
+
+    protected function getListMain()
+    {
+        $this->fields_list = [
+            'id_customer' => [
+                'title' => 'ID',
+                'align' => 'center',
+                'class' => 'fixed-width-xs',
+            ],
+            'firstname' => [
+                'title' => 'Nome',
+                'align' => 'left',
+                'filter_key' => 'c!firstname',
+            ],
+            'lastname' => [
+                'title' => 'Cognome',
+                'align' => 'left',
+                'filter_key' => 'c!lastname',
+            ],
+            'email' => [
+                'title' => 'email',
+                'align' => 'left',
+                'filter_key' => 'c!email',
+            ],
+            'id_customer_job_area' => [
+                'type' => 'select',
+                'title' => 'Settore',
+                'list' => $this->getJobAreas(),
+                'filter_key' => 'cj!id_customer_job_area',
+                'callback' => 'getJobAreaLabel',
+            ],
+            'id_customer_job_name' => [
+                'type' => 'select',
+                'title' => 'Professione',
+                'list' => $this->getJobNames(),
+                'filter_key' => 'cj!id_customer_job_name',
+                'callback' => 'getJobNameLabel',
+            ],
+            'date_add' => [
+                'title' => 'Data creazione',
+                'type' => 'datetime',
+                'filter_key' => 'a!date_add',
+            ],
+            'date_upd' => [
+                'title' => 'Ultima modifica',
+                'type' => 'datetime',
+                'filter_key' => 'a!date_add',
+            ],
+        ];
+
+        $this->table = 'customer';
+        $this->identifier = 'id_customer';
+        $this->className = 'ModelMpCustomerJob';
+        $this->lang = false;
+        $this->_select = 'c.firstname, c.lastname, c.email, cj.id_customer_job_area, cj.id_customer_job_name';
+        $this->_join = ' LEFT JOIN ' . _DB_PREFIX_ . 'customer c ON c.id_customer=a.id_customer';
+        $this->_join .= ' LEFT JOIN ' . _DB_PREFIX_ . 'customer_job cj ON cj.id_customer=a.id_customer';
+    }
+
+    protected function getListLink()
+    {
+    }
+
+    protected function getListArea()
+    {
+        $this->fields_list = [
+            'id_customer_job_area' => [
+                'title' => 'ID',
+                'align' => 'center',
+                'class' => 'fixed-width-xs',
+            ],
+            'name' => [
+                'title' => 'Nome',
+                'align' => 'left',
+                'filter_key' => 'b!name',
+            ],
+            'date_add' => [
+                'title' => 'Data creazione',
+                'type' => 'datetime',
+                'filter_key' => 'a!date_add',
+            ],
+            'date_upd' => [
+                'title' => 'Ultima modifica',
+                'type' => 'datetime',
+                'filter_key' => 'a!date_upd',
+            ],
+        ];
+
+        $this->className = 'ModelMpCustomerJobArea';
+        $this->identifier = 'id_customer_job_area';
+        $this->lang = true;
+        $this->table = 'customer_job_area';
+    }
+
+    protected function getListJobs()
+    {
+        $this->fields_list = [
+            'id_customer_job_name' => [
+                'title' => 'ID',
+                'align' => 'center',
+                'class' => 'fixed-width-xs',
+            ],
+            'name' => [
+                'title' => 'Nome',
+                'align' => 'left',
+                'filter_key' => 'b!name',
+            ],
+            'date_add' => [
+                'title' => 'Data creazione',
+                'type' => 'datetime',
+                'filter_key' => 'a!date_add',
+            ],
+            'date_upd' => [
+                'title' => 'Ultima modifica',
+                'type' => 'datetime',
+                'filter_key' => 'a!date_upd',
+            ],
+        ];
+
+        $this->className = 'ModelMpCustomerJobName';
+        $this->identifier = 'id_customer_job_name';
+        $this->lang = true;
+        $this->table = 'customer_job_name';
     }
 }
